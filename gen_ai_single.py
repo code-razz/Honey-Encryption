@@ -51,7 +51,7 @@ def generate_sentences_with_retry(model, prompt, retries=3):
     raise RuntimeError("All retry attempts failed.")
 
 # Prompt to generate a Python array of sentences
-prompt = "Give me an array of 10 random single sentences, strictly in this format: ['sentence 1', 'sentence 2', ..., 'sentence 10']"
+prompt = "Give me an array of 10 random not commonly used single sentences, strictly in this format: ['sentence 1', 'sentence 2', ..., 'sentence 10']"
 
 # Generate the sentences
 try:

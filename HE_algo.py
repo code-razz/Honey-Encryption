@@ -49,9 +49,9 @@ def generate_decoy(original_message: str) -> str:
 
 # Core Honey Encryption Functions
 class HoneyEncryption:
-    def __init__(self, password: str):
+    def __init__(self, password: str):      #constructor (__init__ method) of the HoneyEncryption class
         self.password = password
-        self.salt = os.urandom(16)  # Random salt for key derivation
+        self.salt = os.urandom(16)  # #randomly generated 16-byte salt for key generation  #✅ensuring that even if the same password is used multiple times, the derived keys will differ
         self.key = derive_key(password, self.salt)  # Derived key
 
     def encrypt(self, plaintext: str, decoys: list[str]) -> dict:
