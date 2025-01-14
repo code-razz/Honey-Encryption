@@ -1,3 +1,5 @@
 .env
 
 HE_venv/
+
+__pycache__/

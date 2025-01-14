@@ -49,9 +49,9 @@ def generate_decoy(original_message: str) -> str:
 
 # Core Honey Encryption Functions
 class HoneyEncryption:
-    def __init__(self, password: str):      #constructor (__init__ method) of the HoneyEncryption class
+    def __init__(self, password: str):
         self.password = password
-        self.salt = os.urandom(16)  # #randomly generated 16-byte salt for key generation  #✅ensuring that even if the same password is used multiple times, the derived keys will differ
+        self.salt = os.urandom(16)  # Randomly generated 16-byte salt for key generation
         self.key = derive_key(password, self.salt)  # Derived key
 
     def encrypt(self, plaintext: str, decoys: list[str]) -> dict:
@@ -108,27 +108,3 @@ class HoneyEncryption:
                 plausible_messages.append(generate_decoy(input_data["ciphertexts"][0]))
 
         return plausible_messages
-
-
-# Test: Encrypt and Decrypt with Enhanced Decoys
-password = "strongpassword123"
-plaintext = "This is a confidential paragraph. It contains sensitive data that needs protection."
-decoys = [
-    "This is a random decoy message.",
-    "This is another decoy to confuse attackers.",
-    "Unrelated message that looks like the real one."
-]
-
-# Initialize Honey Encryption System
-honey_encryption = HoneyEncryption(password)
-
-# Encrypt the data
-encrypted_data = honey_encryption.encrypt(plaintext, decoys)
-
-# Attempt decryption with correct and incorrect keys
-correct_attempt = honey_encryption.decrypt(encrypted_data, "strongpassword123")
-incorrect_attempt = honey_encryption.decrypt(encrypted_data, "wrongpassword456")
-
-print("Encrypted Data:", encrypted_data)
-print("\nDecryption with Correct Key:", correct_attempt)
-print("\nDecryption with Incorrect Key:", incorrect_attempt)
