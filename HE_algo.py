@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
 import base64
+from gen_ai_single import give_decoys
 
 # Utility: Generate a strong key from a password using PBKDF2
 def derive_key(password: str, salt: bytes) -> bytes:
@@ -25,16 +26,19 @@ def generate_decoy(original_message: str) -> str:
     target_length = len(original_message)
 
     # Predefined sentences for decoy generation
-    sentence_pool = [
-        "This document contains sensitive information.",
-        "Access is restricted to authorized personnel only.",
-        "Please ensure the confidentiality of this data.",
-        "Unauthorized access is strictly prohibited.",
-        "Encryption is used to secure all sensitive information.",
-        "This message is protected by advanced security protocols.",
-        "Secure communication is critical to maintaining privacy.",
-        "All data must be handled with the utmost care."
-    ]
+    # sentence_pool = [
+    #     "This document contains sensitive information.",
+    #     "Access is restricted to authorized personnel only.",
+    #     "Please ensure the confidentiality of this data.",
+    #     "Unauthorized access is strictly prohibited.",
+    #     "Encryption is used to secure all sensitive information.",
+    #     "This message is protected by advanced security protocols.",
+    #     "Secure communication is critical to maintaining privacy.",
+    #     "All data must be handled with the utmost care."
+    # ]
+    
+    #generating decoys from GEN AI
+    sentence_pool = give_decoys()
 
     # Combine sentences into a paragraph
     decoy_message = " ".join(random.choices(sentence_pool, k=10))  # Combine 10 random sentences
