@@ -1,11 +1,11 @@
 import socket
 import threading
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 
 # Server code
 class Server:
-    def __init__(self, host='127.0.0.1', port=5000):
+    def __init__(self, host='0.0.0.0', port=5000):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((host, port))
         self.server.listen(2)
@@ -17,10 +17,22 @@ class Server:
         print(f"Connection established with {addr}")
         while True:
             try:
-                message = client_socket.recv(1024).decode('utf-8')
-                if message:
-                    print(f"Message from {addr}: {message}")
-                    self.broadcast(message, client_socket)
+                header = client_socket.recv(1024).decode('utf-8')  # Receive header first
+                if header.startswith("FILE"):
+                    _, filename, filesize = header.split(":", 2)
+                    filesize = int(filesize)
+                    print(f"Receiving file {filename} of size {filesize} bytes from {addr}")
+
+                    with open(f"received_{filename}", "wb") as f:
+                        remaining = filesize
+                        while remaining > 0:
+                            data = client_socket.recv(min(1024, remaining))
+                            f.write(data)
+                            remaining -= len(data)
+
+                    self.broadcast_file(f"received_{filename}", filename, client_socket)
+                else:
+                    self.broadcast(header, client_socket)  # Broadcast text messages
             except:
                 print(f"Connection with {addr} lost")
                 self.connections.remove(client_socket)
@@ -35,15 +47,29 @@ class Server:
                 except:
                     pass
 
+    def broadcast_file(self, filepath, filename, sender):
+        with open(filepath, "rb") as f:
+            file_data = f.read()
+        header = f"FILE:{filename}:{len(file_data)}".encode('utf-8')
+
+        for conn in self.connections:
+            if conn != sender:
+                try:
+                    conn.send(header)
+                    conn.send(file_data)
+                except:
+                    pass
+
     def start(self):
         while True:
             client_socket, addr = self.server.accept()
             self.connections.append(client_socket)
             threading.Thread(target=self.handle_client, args=(client_socket, addr)).start()
 
+
 # Client code
 class Client:
-    def __init__(self, host='127.0.0.1', port=5000):
+    def __init__(self, host='192.168.31.77', port=5000):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((host, port))
         print(f"Connected to server {host}:{port}")
@@ -51,14 +77,36 @@ class Client:
     def send_message(self, message):
         self.client.send(message.encode('utf-8'))
 
+    def send_file(self, filepath):
+        filename = filepath.split("/")[-1]
+        with open(filepath, "rb") as f:
+            file_data = f.read()
+
+        header = f"FILE:{filename}:{len(file_data)}".encode('utf-8')
+        self.client.send(header)
+        self.client.send(file_data)
+
     def receive_messages(self, callback):
         while True:
             try:
-                message = self.client.recv(1024).decode('utf-8')
-                callback(message)
+                header = self.client.recv(1024).decode('utf-8')
+                if header.startswith("FILE"):
+                    _, filename, filesize = header.split(":", 2)
+                    filesize = int(filesize)
+
+                    with open(f"downloaded_{filename}", "wb") as f:
+                        remaining = filesize
+                        while remaining > 0:
+                            data = self.client.recv(min(1024, remaining))
+                            f.write(data)
+                            remaining -= len(data)
+                    callback(f"Received file: downloaded_{filename}")
+                else:
+                    callback(header)
             except:
                 print("Connection to server lost")
                 break
+
 
 # Tkinter UI
 class ChatApp:
@@ -77,6 +125,9 @@ class ChatApp:
         self.send_button = tk.Button(root, text="Send", command=self.send_message)
         self.send_button.grid(row=1, column=1, padx=10, pady=10)
 
+        self.file_button = tk.Button(root, text="Send File", command=self.send_file)
+        self.file_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+
         threading.Thread(target=self.receive_messages).start()
 
     def send_message(self):
@@ -86,9 +137,15 @@ class ChatApp:
             self.display_message(f"You: {message}")
             self.message_entry.delete(0, tk.END)
 
+    def send_file(self):
+        filepath = filedialog.askopenfilename()
+        if filepath:
+            self.client.send_file(filepath)
+            self.display_message(f"You sent a file: {filepath.split('/')[-1]}")
+
     def receive_messages(self):
         def callback(message):
-            self.display_message(f"Friend: {message}")
+            self.display_message(message)
         self.client.receive_messages(callback)
 
     def display_message(self, message):
@@ -96,6 +153,7 @@ class ChatApp:
         self.chat_area.insert(tk.END, message + '\n')
         self.chat_area.config(state='disabled')
         self.chat_area.see(tk.END)
+
 
 # Main function
 if __name__ == "__main__":
