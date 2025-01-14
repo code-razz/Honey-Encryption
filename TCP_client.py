@@ -2,6 +2,8 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import filedialog
+from HE_index import encrypt_message
+
 
 
 class Client:
@@ -11,7 +13,13 @@ class Client:
         print(f"Connected to server {host}:{port}")
 
     def send_message(self, message):
+        # Ensure message is a string before encoding it
+        if isinstance(message, dict):  # if the message is a dictionary, convert it to a string (e.g., using JSON)
+            import json
+            message = json.dumps(message)  # Convert dict to string (JSON format)
+        
         self.client.send(message.encode('utf-8'))
+
 
     def send_file(self, filepath):
         filename = filepath.split("/")[-1]
@@ -66,9 +74,14 @@ class ChatApp:
         threading.Thread(target=self.receive_messages).start()
 
     def send_message(self):
+        HE_password="pass1234"
         message = self.message_entry.get()
+        # message = str(message)  # Convert message to string
+
         if message:
-            self.client.send_message(message)
+            encrypted_message=encrypt_message(HE_password,message)
+
+            self.client.send_message(encrypted_message)
             self.display_message(f"You: {message}")
             self.message_entry.delete(0, tk.END)
 
